@@ -1,7 +1,5 @@
 # HVC-C2W Android-SDK by OMRON
 
-###  現在、本SDKはAPI仕様書、WebAPI仕様書、ヘッダファイル、JNIソースコードのみの提供となりコンパイル出来ませんのでご了承下さい。
-
 ### 1. SDK内容
   Android端末からオムロン製HVC-C2Wを制御するためのSDK(α版)を提供します。
   
