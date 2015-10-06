@@ -1,7 +1,5 @@
 # HVC-C2W Android-SDK by OMRON
 
-###  現在、本SDKはAPI仕様書、WebAPI仕様書、ヘッダファイル、JNIソースコードのみの提供となりコンパイル出来ませんのでご了承下さい。
-
 ### 1. SDK内容
   Android端末からオムロン製HVC-C2Wを制御するためのSDK(α版)を提供します。
   
@@ -10,8 +8,8 @@
       同意いただける場合のみ本SDKをご利用頂けます。
 
   2.2 本SDKをご利用頂くにはSensingEggProjectメンバーサイトへの　
-  メンバー登録（無料）が必要です。
-  http://plus-sensing.omron.co.jp/member/sdk/
+      メンバー登録（無料）が必要です。
+      http://plus-sensing.omron.co.jp/member/sdk/
 
   2.3 WebAPIを使用してサーバにアクセスするためにはAppIDとApiKeyが必要となります。
       SensingEggProjcetメンバーサイト内の「APIキー申請フォーム」よりご申請下さい。
