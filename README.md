@@ -19,16 +19,24 @@
       doc/
          HVC-C2W_WebAPI仕様書      HVC-C2Wを使用する為のクラウドサーバWebAPI仕様書
          HVC-C2W_API仕様書         HVC-C2Wを制御する為のAPI仕様書
-      bin/
-         jar/                      jarファイル格納フォルダ
-         native/                   HVC-C2W SDKバイナリファイル本体
+      libs/                        HVC-C2W SDKバイナリファイル本体
       src/
-         HVCW_JNI/                 JNIソースコード
-         java/                     javaソースコード
-         src/usr_include/
+         include/
             HvcwSdkAPI.h           SDKヘッダファイル
             HvcwTypedef.h          TypeDef定義
             HvcwCommonDef.h        エラーコード定義
+
+      sample/
+         src/                      JNIサンプル
+            main/
+               java/               javaソースコード
+               jni/                JNIソースコード
+         libs/
+            jar/
+               HVCW.jar            jarファイル
+
+         demo/
+            base/                  基本サンプルデモプロジェクト(Android Studio)
 
 
 ###[ご使用にあたって]
