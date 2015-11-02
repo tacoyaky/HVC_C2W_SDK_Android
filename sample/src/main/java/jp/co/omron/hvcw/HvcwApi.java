@@ -291,6 +291,8 @@ public class HvcwApi
 
 	private native long createHandleNative();
 
+	private native int initLibrary();
+
 	/**
 	 * ハンドル作成
 	 * @return 成功時はハンドル、失敗時はnullを返す
@@ -298,6 +300,7 @@ public class HvcwApi
 	public static HvcwApi createHandle()
 	{
 		HvcwApi hvcwapi = new HvcwApi();
+		hvcwapi.initLibrary();
 		hvcwapi.handle = hvcwapi.createHandleNative();
 		if(hvcwapi.handle == 0)
 		{
@@ -571,29 +574,6 @@ public class HvcwApi
 	public int stopLive()
 	{
 		return stopLive(handle);
-	}
-
-	private native int freeDecodedVideoBuffer(long hHVC, long buffer);
-
-	/**
-	 * ビデオフレームバッファーの解放
-	 * @param buffer ビデオフレームバッファー
-	 * @return エラーコード
-	 */
-	public int freeDecodedVideoBuffer(long buffer)
-	{
-		return freeDecodedVideoBuffer(handle, buffer);
-	}
-
-
-	/**
-	 * 音声データの解放
-	 */
-	private native int freeDecodedAudioBuffer(long hHVC, long buffer);
-
-	public int freeDecodedAudioBuffer(long buffer)
-	{
-		return freeDecodedAudioBuffer(handle, buffer);
 	}
 
 	private native int enterTalkMode(long hHVC);

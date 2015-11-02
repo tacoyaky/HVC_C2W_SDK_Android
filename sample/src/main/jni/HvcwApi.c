@@ -10,6 +10,7 @@
 #include <jni.h>
 #include <android/log.h>
 #include <stdlib.h>
+#include <pthread.h>
 
 #include "HvcwUtils.h"
 
@@ -19,6 +20,7 @@ static jobject gObjRenderingCallBack = NULL;
 static jobject gObjLiveCallBack      = NULL;
 static JavaVM  *g_JavaVM;	//JavaVM情報
 
+static pthread_mutex_t  gRenderingCallBackMutex = PTHREAD_MUTEX_INITIALIZER;
 
 /**
  * JNIロード時に呼び出されるコールバック
@@ -169,36 +171,76 @@ static HVCW_INT32 RenderingCallbackFunction(HVCW_BOOL isVideo,
 	jmethodID  mid    = NULL;
 	HVCW_INT32 nRet   = 0;
 	HVCW_INT32 param1 = 0;
-	jlong      param2 = (jlong)((long)pRenderInfo);
-
+	HHVC       hHVC   = (HHVC)pUserParam;
+	jbyteArray arrSoundData = NULL;
+	HVCW_VIDEOFRAME *pVideoFrame = NULL;
+	jbyteArray arrY = NULL;
+	jbyteArray arrU = NULL;
+	jbyteArray arrV = NULL;
+	jlong width = 0;
+	jlong height = 0;
+	jlong timeStamp = (jlong)((long)unTimeStamp);
 
 	int attach;
+	pthread_mutex_lock(&gRenderingCallBackMutex);
+
 	JNIEnv *env = getJNIEnv(&attach);
 
 	__android_log_print(ANDROID_LOG_INFO, "Debug", "RenderingCallbackFunction 001\n");
 	/* NULL チェック */
 	if((gObjRenderingCallBack == NULL) || (env == NULL)){
-		return HVCW_INVALID_PARAM;
+		nRet = HVCW_INVALID_PARAM;
+		goto mutex_unlock;
 	}
 
 	__android_log_print(ANDROID_LOG_INFO, "Debug", "RenderingCallbackFunction 002\n");
 	/* jclassを取得する */
 	cls = (*env)->GetObjectClass(env, gObjRenderingCallBack);
 	if(cls == NULL){
-		return HVCW_INVALID_PARAM;
+		nRet = HVCW_INVALID_PARAM;
+		goto mutex_unlock;
 	}
 
-	__android_log_print(ANDROID_LOG_INFO, "Debug", "RenderingCallbackFunction 003\n");
-	/* メソッドIDを取得する */
-	mid = (*env)->GetMethodID(env, cls, "requestRenderingCallback", "(IJJJJ)I");
-	if(mid == NULL){
-		return HVCW_INVALID_PARAM;
+	if(isVideo == 0) {
+		arrSoundData = (*env)->NewByteArray(env, unInfoLen);
+		nRet = JNUSetSoundData(env, arrSoundData, (HVCW_BYTE*)pRenderInfo, (jlong)((long)unInfoLen));
+		nRet = HVCW_FreeDecodedAudioBuffer(hHVC, pRenderInfo);
+
+		__android_log_print(ANDROID_LOG_INFO, "Debug", "RenderingCallbackFunction 003\n");
+		/* メソッドIDを取得する */
+		mid = (*env)->GetMethodID(env, cls, "soundDataCallback", "(J[BJ)I");
+		if(mid == NULL){
+			nRet = HVCW_INVALID_PARAM;
+			goto delete_local_ref;
+		}
+
+		__android_log_print(ANDROID_LOG_INFO, "Debug", "RenderingCallbackFunction 004\n");
+		/* メソッドを呼び出す */
+		nRet = (*env)->CallIntMethod(env, gObjRenderingCallBack, mid, (jlong)((long)param1), arrSoundData, timeStamp);
+	}else{
+		pVideoFrame = (HVCW_VIDEOFRAME*)pRenderInfo;
+		width = (jlong)((long)pVideoFrame->width);
+		height = (jlong)((long)pVideoFrame->height);
+		arrY = (*env)->NewByteArray(env, pVideoFrame->stride[0] * pVideoFrame->height);
+		arrU = (*env)->NewByteArray(env, pVideoFrame->stride[1] * pVideoFrame->height);
+		arrV = (*env)->NewByteArray(env, pVideoFrame->stride[2] * pVideoFrame->height);
+		nRet = JNUSetVideoFrame(env, arrY, arrU, arrV, pVideoFrame);
+		nRet = HVCW_FreeDecodedVideoBuffer(hHVC, pRenderInfo);
+
+		__android_log_print(ANDROID_LOG_INFO, "Debug", "RenderingCallbackFunction 003\n");
+		/* メソッドIDを取得する */
+		mid = (*env)->GetMethodID(env, cls, "videoFrameCallback", "(J[B[B[BJJJ)I");
+		if(mid == NULL){
+			nRet = HVCW_INVALID_PARAM;
+			goto delete_local_ref;
+		}
+
+		__android_log_print(ANDROID_LOG_INFO, "Debug", "RenderingCallbackFunction 004\n");
+		/* メソッドを呼び出す */
+		nRet = (*env)->CallIntMethod(env, gObjRenderingCallBack, mid, (jlong)((long)param1), arrY, arrU, arrV, width, height, timeStamp);
 	}
 
-	__android_log_print(ANDROID_LOG_INFO, "Debug", "RenderingCallbackFunction 004\n");
-	/* メソッドを呼び出す */
-	nRet = (*env)->CallIntMethod(env, gObjRenderingCallBack, mid, (jint)((int)isVideo), (jlong)((long)param1), param2, (jlong)((long)unInfoLen), (jlong)((long)unTimeStamp));
-
+delete_local_ref:
 	__android_log_print(ANDROID_LOG_INFO, "Debug", "RenderingCallbackFunction 005\n");
 	/* Free local references */
 	(*env)->DeleteLocalRef(env, cls);
@@ -208,6 +250,10 @@ static HVCW_INT32 RenderingCallbackFunction(HVCW_BOOL isVideo,
 		(*g_JavaVM)->DetachCurrentThread(g_JavaVM);
 	}
 	__android_log_print(ANDROID_LOG_INFO, "Debug", "RenderingCallbackFunction END\n");
+
+mutex_unlock:
+	pthread_mutex_unlock(&gRenderingCallBackMutex);
+
 	return nRet;
 }
 
@@ -296,6 +342,18 @@ static HVCW_INT32 JNUSetLiveEventCallback(JNIEnv *env, jobject objCallBack, HVCW
 	return HVCW_SUCCESS;
 }
 
+/*
+ * Class:     jp_co_omron_hvcw_HvcwApi
+ * Method:    initLibrary()
+ * Signature: ()I
+ */
+JNIEXPORT jint JNICALL Java_jp_co_omron_hvcw_HvcwApi_initLibrary
+(JNIEnv *env, jclass cls)
+{
+	pthread_mutex_init(&gRenderingCallBackMutex, NULL);
+
+	return HVCW_SUCCESS;
+}
 
 /*
  * Class:     jp_co_omron_hvcw_HvcwApi
@@ -353,7 +411,6 @@ JNIEXPORT jint JNICALL Java_jp_co_omron_hvcw_HvcwApi_deleteHandle
 	DeleteGlobalObj();
 
 	HHVC hHVC = (HHVC)((long)handle);
-
 	nRet = HVCW_DeleteHandle(hHVC);
 
 	return nRet;
@@ -802,8 +859,8 @@ JNIEXPORT jint JNICALL Java_jp_co_omron_hvcw_HvcwApi_startLive
 
 	HHVC hHVC = (HHVC)((long)handle);
 
-	/* とりあえず pUserParam:0 */
-	nRet = HVCW_StartLive(hHVC, 0, (HVCW_VIDEO_RESOLUTION)videoResolution,
+	/* とりあえずobjUserParamは無視してハンドルを送る */
+	nRet = HVCW_StartLive(hHVC, (HVCW_VOID*)hHVC, (HVCW_VIDEO_RESOLUTION)videoResolution,
 							renderingCallbackFunc, liveEventCallbackFunc);
 
 	__android_log_print(ANDROID_LOG_INFO, "Debug", "startLive END retrun:%d\n", nRet);
@@ -823,46 +880,6 @@ JNIEXPORT jint JNICALL Java_jp_co_omron_hvcw_HvcwApi_stopLive
 	HHVC hHVC = (HHVC)((long)handle);
 
 	nRet = HVCW_StopLive(hHVC);
-
-	return nRet;
-}
-
-/*
- * Class:     jp_co_omron_hvcw_HvcwApi
- * Method:    freeDecodedVideoBuffer
- * Signature: (JJ)I
- */
-JNIEXPORT jint JNICALL Java_jp_co_omron_hvcw_HvcwApi_freeDecodedVideoBuffer
-(JNIEnv *env, jobject obj, jlong handle, jlong buffer)
-{
-	HVCW_INT32 nRet;
-	const HVCW_VOID *pBuffer;
-
-	pBuffer = (HVCW_VOID*)((long)buffer);
-
-	HHVC hHVC = (HHVC)((long)handle);
-
-	nRet = HVCW_FreeDecodedVideoBuffer(hHVC, &pBuffer);
-
-	return nRet;
-}
-
-/*
- * Class:     jp_co_omron_hvcw_HvcwApi
- * Method:    freeDecodedAudioBuffer
- * Signature: (JJ)I
- */
-JNIEXPORT jint JNICALL Java_jp_co_omron_hvcw_HvcwApi_freeDecodedAudioBuffer
-(JNIEnv *env, jobject obj, jlong handle, jlong buffer)
-{
-	HVCW_INT32 nRet;
-	const HVCW_VOID *pBuffer;
-
-	pBuffer = (HVCW_VOID*)((long)buffer);
-
-	HHVC hHVC = (HHVC)((long)handle);
-
-	nRet = HVCW_FreeDecodedAudioBuffer(hHVC, &pBuffer);
 
 	return nRet;
 }
@@ -1199,44 +1216,6 @@ JNIEXPORT jint JNICALL Java_jp_co_omron_hvcw_HvcwApi_getStorageInfo
 	if(HVCW_SUCCESS == nRet){
 		nRet = JNUSetStorageInfo(env, objStorageInfo, &StorageInfo);
 	}
-
-	return nRet;
-}
-
-/*
- * Class:     jp_co_omron_hvcw_HvcwApi
- * Method:    getVideoFrame
- * Signature: (JLjp/co/omron/hvcw/VideoFrame;)I
- */
-JNIEXPORT jint JNICALL Java_jp_co_omron_hvcw_HvcwApi_getVideoFrame
-(JNIEnv *env, jobject obj, jlong renderInfo, jobject objVideoFrame)
-{
-	HVCW_INT32 nRet;
-
-	if(objVideoFrame == NULL){
-		return HVCW_INVALID_PARAM;
-	}
-
-	nRet = JNUSetVideoFrame(env, objVideoFrame, (HVCW_VIDEOFRAME*)((long)renderInfo));
-
-	return nRet;
-}
-
-/*
- * Class:     jp_co_omron_hvcw_HvcwApi
- * Method:    getSoundData
- * Signature: (JJ[B)I
- */
-JNIEXPORT jint JNICALL Java_jp_co_omron_hvcw_HvcwApi_getSoundData
-(JNIEnv *env, jobject obj, jlong renderInfo, jlong infoLen, jbyteArray arrSoundData)
-{
-	HVCW_INT32 nRet;
-
-	if(arrSoundData == NULL){
-		return HVCW_INVALID_PARAM;
-	}
-
-	nRet = JNUSetSoundData(env, arrSoundData, (HVCW_VOID*)((long)renderInfo), infoLen);
 
 	return nRet;
 }

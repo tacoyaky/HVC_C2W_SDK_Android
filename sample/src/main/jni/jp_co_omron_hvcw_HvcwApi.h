@@ -223,6 +223,14 @@ extern "C" {
 #define jp_co_omron_hvcw_HvcwApi_HVCW_Expression_Max 5L
 /*
  * Class:     jp_co_omron_hvcw_HvcwApi
+ * Method:    initLibrary()
+ * Signature: ()I
+ */
+JNIEXPORT jint JNICALL Java_jp_co_omron_hvcw_HvcwApi_initLibrary
+  (JNIEnv *, jclass);
+
+/*
+ * Class:     jp_co_omron_hvcw_HvcwApi
  * Method:    getVersion
  * Signature: (Ljp/co/omron/hvcw/Int;Ljp/co/omron/hvcw/Int;Ljp/co/omron/hvcw/Int;)I
  */
@@ -415,22 +423,6 @@ JNIEXPORT jint JNICALL Java_jp_co_omron_hvcw_HvcwApi_stopLive
 
 /*
  * Class:     jp_co_omron_hvcw_HvcwApi
- * Method:    freeDecodedVideoBuffer
- * Signature: (JJ)I
- */
-JNIEXPORT jint JNICALL Java_jp_co_omron_hvcw_HvcwApi_freeDecodedVideoBuffer
-  (JNIEnv *, jobject, jlong, jlong);
-
-/*
- * Class:     jp_co_omron_hvcw_HvcwApi
- * Method:    freeDecodedAudioBuffer
- * Signature: (JJ)I
- */
-JNIEXPORT jint JNICALL Java_jp_co_omron_hvcw_HvcwApi_freeDecodedAudioBuffer
-  (JNIEnv *, jobject, jlong, jlong);
-
-/*
- * Class:     jp_co_omron_hvcw_HvcwApi
  * Method:    enterTalkMode
  * Signature: (J)I
  */
@@ -540,22 +532,6 @@ JNIEXPORT jint JNICALL Java_jp_co_omron_hvcw_HvcwApi_checkNewFirmware
  */
 JNIEXPORT jint JNICALL Java_jp_co_omron_hvcw_HvcwApi_getStorageInfo
   (JNIEnv *, jobject, jlong, jobject);
-
-/*
- * Class:     jp_co_omron_hvcw_HvcwApi
- * Method:    getVideoFrame
- * Signature: (JLjp/co/omron/hvcw/VideoFrame;)I
- */
-JNIEXPORT jint JNICALL Java_jp_co_omron_hvcw_HvcwApi_getVideoFrame
-  (JNIEnv *, jobject, jlong, jobject);
-  
-/*
- * Class:     jp_co_omron_hvcw_HvcwApi
- * Method:    getSoundData
- * Signature: (JJ[B)I
- */
-JNIEXPORT jint JNICALL Java_jp_co_omron_hvcw_HvcwApi_getSoundData
-  (JNIEnv *, jobject, jlong, jlong, jbyteArray);
 
 /*
  * Class:     jp_co_omron_hvcw_HvcwApi

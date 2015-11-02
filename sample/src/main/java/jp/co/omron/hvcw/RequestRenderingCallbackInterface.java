@@ -15,13 +15,24 @@ package jp.co.omron.hvcw;
 public interface RequestRenderingCallbackInterface
 {
 	/**
-	 * レンダリング要求コールバック
-	 * @param isVideo ビデオ描画要求（HVCW_TRUE : ビデオ描画要求, HVCW_FALSE : 音声データ再生要求）
+	 * 音声データコールバック
 	 * @param userParam ユーザーパラメータ
-	 * @param renderInfo ビデオフレーム、又は音声データ
-	 * @param lInfoLen renderInfoサイズ
-	 * @param lTimeStamp タイムスタンプ
+	 * @param sound 音声データ
+	 * @param timeStamp タイムスタンプ
 	 * @return HVCW_SUCCESS 正常終了
 	 */
-	public int requestRenderingCallback(int isVideo, long userParam, long renderInfo, long lInfoLen, long lTimeStamp);
+	public int soundDataCallback(long userParam, byte[] sound, long timeStamp);
+
+	/**
+	 * ビデオフレームコールバック
+	 * @param userParam ユーザーパラメータ
+	 * @param y 輝度Y
+	 * @param u B-Y
+	 * @param v R-Y
+	 * @param width ビデオフレームの幅
+	 * @param height ビデオフレームの高さ
+	 * @param timeStamp タイムスタンプ
+	 * @return HVCW_SUCCESS 正常終了
+	 */
+	public int videoFrameCallback(long userParam, byte[] y, byte[] u, byte[] v, long width, long height, long timeStamp);
 }

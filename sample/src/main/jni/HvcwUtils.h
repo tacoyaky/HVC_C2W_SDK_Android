@@ -162,11 +162,11 @@ HVCW_INT32 JNUSetScheduleInfo(JNIEnv *env, jobject objSchedule, HVCW_SCHEDULE_IN
 /*
  * pVideoFrame -> objVideoFrame
  */
-HVCW_INT32 JNUSetVideoFrame(JNIEnv *env, jobject objVideoFrame, HVCW_VIDEOFRAME *pVideoFrame);
+HVCW_INT32 JNUSetVideoFrame(JNIEnv *env, jbyteArray arrY, jbyteArray arrU, jbyteArray arrV, HVCW_VIDEOFRAME *pVideoFrame);
 /*
  * pSoundData -> objSoundData
  */
-HVCW_INT32 JNUSetSoundData(JNIEnv *env, jobject objSoundData, HVCW_VOID *pSoundData, jlong len);
+HVCW_INT32 JNUSetSoundData(JNIEnv *env, jbyteArray arrSoundData, HVCW_BYTE *pSoundData, jlong len);
 /*
  * objBody -> pBody
  */

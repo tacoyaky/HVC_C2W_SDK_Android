@@ -542,116 +542,36 @@ HVCW_INT32 JNUSetStorageInfo(JNIEnv *env, jobject objStorageInfo, HVCW_STORAGEIN
 /*
  * pVideoFrame -> objVideoFrame
  */
-HVCW_INT32 JNUSetVideoFrame(JNIEnv *env, jobject objVideoFrame, HVCW_VIDEOFRAME *pVideoFrame) {
-	jclass   cls = NULL;
-	jfieldID fid = NULL;
-	jlongArray arrStride = NULL;
-	jlong      *pnStride = NULL;
-	jint       nLength   = 0;
-	unsigned int i       = 0;
-	jfieldID fidU = NULL;
-	jfieldID fidV = NULL;
+HVCW_INT32 JNUSetVideoFrame(JNIEnv *env, jbyteArray arrY, jbyteArray arrU, jbyteArray arrV, HVCW_VIDEOFRAME *pVideoFrame) {
+	jint nLength = 0;
+	unsigned int i = 0;
 	unsigned char *p  = NULL;
 	unsigned char *pU = NULL;
 	unsigned char *pV = NULL;
-	jbyteArray arrBuffer  = NULL;
-	jbyteArray arrBufferU = NULL;
-	jbyteArray arrBufferV = NULL;
 	jbyte *pBuffer  = NULL;
 	jbyte *pBufferU = NULL;
 	jbyte *pBufferV = NULL;
 
-	cls = (*env)->GetObjectClass(env, objVideoFrame);
-	if(cls == NULL){
-		return HVCW_INVALID_PARAM;
-	}
-
-	fid = (*env)->GetFieldID(env, cls, "stride", "[J");
-	if(fid == NULL){
-		(*env)->DeleteLocalRef(env, cls);
-		cls = NULL;
-		return HVCW_INVALID_PARAM;
-	}
-	arrStride = (jlongArray)(*env)->GetObjectField(env, objVideoFrame, fid);
-
-	nLength = (*env)->GetArrayLength(env, arrStride);
-
-	pnStride = (*env)->GetLongArrayElements(env, arrStride, NULL);
-	for(i = 0; i<nLength; i++){
-		pnStride[i] = (jlong)pVideoFrame->stride[i];
-	}
-	(*env)->SetLongArrayRegion(env, arrStride, 0, nLength, pnStride);
-
-	(*env)->ReleaseLongArrayElements(env, arrStride, pnStride, 0);
-
-
-	fid = NULL;
-	fid = (*env)->GetFieldID(env, cls, "width", "J");
-	if(fid == NULL){
-		(*env)->DeleteLocalRef(env, cls);
-		cls = NULL;
-		return HVCW_INVALID_PARAM;
-	}
-	(*env)->SetLongField(env, objVideoFrame, fid, (jlong)(pVideoFrame->width));
-
-
-	fid = NULL;
-	fid = (*env)->GetFieldID(env, cls, "height", "J");
-	if(fid == NULL){
-		(*env)->DeleteLocalRef(env, cls);
-		cls = NULL;
-		return HVCW_INVALID_PARAM;
-	}
-	(*env)->SetLongField(env, objVideoFrame, fid, (jlong)(pVideoFrame->height));
-
-
-	fid = NULL;
-	fid = (*env)->GetFieldID(env, cls, "y", "[B");
-	if(fid == NULL){
-		(*env)->DeleteLocalRef(env, cls);
-		cls = NULL;
-		return HVCW_INVALID_PARAM;
-	}
-
 	nLength = pVideoFrame->stride[0] * pVideoFrame->height;
 	p = pVideoFrame->buffer[0];
-	arrBuffer = (*env)->NewByteArray(env, nLength);
-	pBuffer = (*env)->GetByteArrayElements(env, arrBuffer, NULL);
+	pBuffer = (*env)->GetByteArrayElements(env, arrY, NULL);
 	for(i = 0; i<nLength; i++){
 		pBuffer[i] = p[i];
 	}
-	(*env)->SetObjectField(env, objVideoFrame, fid, arrBuffer);
+	(*env)->ReleaseByteArrayElements(env, arrY, pBuffer, 0);
 
-	(*env)->ReleaseByteArrayElements(env, arrBuffer, pBuffer, 0);
-
-
-	fidU = (*env)->GetFieldID(env, cls, "u", "[B");
-	fidV = (*env)->GetFieldID(env, cls, "v", "[B");
-	if((fidU == NULL) || (fidV == NULL)){
-		(*env)->DeleteLocalRef(env, cls);
-		cls = NULL;
-		return HVCW_INVALID_PARAM;
-	}
 
 	nLength = pVideoFrame->stride[1] * (pVideoFrame->height / 2);
 	pU = pVideoFrame->buffer[1];
 	pV = pVideoFrame->buffer[2];
-	arrBufferU = (*env)->NewByteArray(env, nLength);
-	arrBufferV = (*env)->NewByteArray(env, nLength);
-	pBufferU = (*env)->GetByteArrayElements(env, arrBufferU, NULL);
-	pBufferV = (*env)->GetByteArrayElements(env, arrBufferV, NULL);
+	pBufferU = (*env)->GetByteArrayElements(env, arrU, NULL);
+	pBufferV = (*env)->GetByteArrayElements(env, arrV, NULL);
 	for(i = 0; i<nLength; i++){
 		pBufferU[i] = pU[i];
 		pBufferV[i] = pV[i];
 	}
-	(*env)->SetObjectField(env, objVideoFrame, fidU, arrBufferU);
-	(*env)->SetObjectField(env, objVideoFrame, fidV, arrBufferV);
-
-	(*env)->ReleaseByteArrayElements(env, arrBufferU, pBufferU, 0);
-	(*env)->ReleaseByteArrayElements(env, arrBufferV, pBufferV, 0);
-
-	(*env)->DeleteLocalRef(env, cls);
-	cls = NULL;
+	(*env)->ReleaseByteArrayElements(env, arrU, pBufferU, 0);
+	(*env)->ReleaseByteArrayElements(env, arrV, pBufferV, 0);
 
 	return HVCW_SUCCESS;
 }
@@ -659,14 +579,13 @@ HVCW_INT32 JNUSetVideoFrame(JNIEnv *env, jobject objVideoFrame, HVCW_VIDEOFRAME 
 /*
  * pSoundData -> objSoundData
  */
-HVCW_INT32 JNUSetSoundData(JNIEnv *env, jbyteArray arrSoundData, HVCW_VOID *pSoundData, jlong len) {
+HVCW_INT32 JNUSetSoundData(JNIEnv *env, jbyteArray arrSoundData, HVCW_BYTE *pSoundData, jlong len) {
 	jbyte *pData = NULL;
 	unsigned int i = 0;
-	unsigned char *p = (unsigned char *)pSoundData;
 
 	pData = (*env)->GetByteArrayElements(env, arrSoundData, NULL);
 	for(i = 0; i<len; i++){
-		pData[i] = p[i];
+		pData[i] = pSoundData[i];
 	}
 	(*env)->SetByteArrayRegion(env, arrSoundData, 0, len, pData);
 
