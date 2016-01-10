@@ -51,9 +51,12 @@ import jp.co.omron.hvcw.HvcwApi;
 import jp.co.omron.hvcw.Int;
 import jp.co.omron.hvcw.OkaoResult;
 import jp.co.omron.hvcw.ResultAeg;
+import jp.co.omron.hvcw.ResultBlink;
 import jp.co.omron.hvcw.ResultDetection;
 import jp.co.omron.hvcw.ResultDirection;
+import jp.co.omron.hvcw.ResultExpression;
 import jp.co.omron.hvcw.ResultFace;
+import jp.co.omron.hvcw.ResultGaze;
 import jp.co.omron.hvcw.ResultGender;
 import jp.co.omron.hvcw.ResultRecognition;
 
@@ -732,8 +735,8 @@ public class MainActivity extends AppCompatActivity {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                // 顔検出・顔向き推定・年齢推定・性別推定・顔認証をON
-                int useFunction[] = {0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1};
+                // 顔検出・顔向き推定・年齢推定・性別推定・視線推定・目つむり推定・表情推定・顔認証をON
+                int useFunction[] = {0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1};
                 OkaoResult result = new OkaoResult();
                 Int returnStatus = new Int();
                 // 実行
@@ -769,6 +772,25 @@ public class MainActivity extends AppCompatActivity {
                         sb.append(String.format("\nface[%d] gender=%d,confidence=%d", i,
                                 rg.getGender(),
                                 rg.getConfidence()));
+                        // 視線推定結果
+                        ResultGaze rgz = rf[i].getGaze();
+                        sb.append(String.format("\nface[%d] LR=%d,UD=%d", i,
+                                rgz.getLR(),
+                                rgz.getUD()));
+                        // 目つむり推定結果
+                        ResultBlink rb = rf[i].getBlink();
+                        sb.append(String.format("\nface[%d] leftEye=%d,rightEye=%d", i,
+                                rb.getLeftEye(),
+                                rb.getRightEye()));
+                        // 表情推定結果
+                        ResultExpression re = rf[i].getExpression();
+                        sb.append(String.format("\nface[%d] neutral=%d%%,happiness=%d%%,surprise=%d%%,anger=%d%%,sadness=%d%%,degree=%d", i,
+                                re.getScore()[0],
+                                re.getScore()[1],
+                                re.getScore()[2],
+                                re.getScore()[3],
+                                re.getScore()[4],
+                                re.getDegree()));
                         // 顔認証
                         ResultRecognition rr = rf[i].getRecognition();
                         String recg;
